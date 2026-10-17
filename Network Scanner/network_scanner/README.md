@@ -80,3 +80,27 @@ network_scanner/
   scanning, OS detection, service detection, CSV/XLSX export, Tkinter
   GUI) without the platform-specific packaging tooling (`.exe` builds,
   installers, splash screens), which wasn't relevant on macOS.
+
+## Finding every device (macOS)
+
+Without administrator rights, nmap misses devices that don't run a web
+server or that ignore connections (bulbs, cameras, phones). The scanner
+finds hosts in this order:
+
+1. **Administrator ARP sweep** — `sudo -n nmap -sn -n -oG - 10.0.0.0/24`.
+   Finds every device in a few seconds. Needs this sudoers rule, which
+   allows only that exact command without a password:
+
+   ```
+   # /etc/sudoers.d/netscanner  (check with: sudo visudo -cf <file>)
+   alan ALL=(root) NOPASSWD: /opt/homebrew/bin/nmap -sn -n -oG - 10.0.0.0/24
+   ```
+
+   Remove with `sudo rm /etc/sudoers.d/netscanner`.
+2. **Fallback (no rule, or a different target):** a normal `nmap -sn`
+   sweep, a 5-second pause, then the macOS ARP cache (`arp -an`).
+   Works without root but misses sleepy devices; results vary per run.
+
+Run the app by double-clicking `run_scanner.command`, or with
+`source .venv/bin/activate && python main.py`. Zed (or whichever app
+runs it) needs **System Settings → Privacy & Security → Local Network**.
